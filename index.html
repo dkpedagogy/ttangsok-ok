@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTX와 충북 교통거점 시대, 싱크홀 막는 지하 디지털 트윈</title>
+<style>
+/* Hallmark, component: judgment-tool, theme: toss-like(style only, no brand assets)
+ * states: default, hover, focus, active, result */
+:root{
+  --bg: #F2F4F6;
+  --card: #FFFFFF;
+  --ink: #191F28;
+  --sub: #6B7684;
+  --line: #E5E8EB;
+  --blue: #3182F6;
+  --blue-deep: #1B64DA;
+  --blue-soft: #E8F3FF;
+  --red: #F04452;
+  --red-soft: #FDEDEE;
+  --amber: #D9730D;
+  --amber-soft: #FFF3E0;
+  --green: #00A661;
+  --green-soft: #E5F7EE;
+  --r-lg: 20px; --r-md: 14px; --r-sm: 10px;
+  --font: "Pretendard", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:clip}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 20px 64px}
+.hero{background:var(--card);border-radius:var(--r-lg);padding:32px 32px 28px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.hero .eyebrow{display:inline-block;background:var(--blue-soft);color:var(--blue-deep);
+  font-size:13px;font-weight:700;border-radius:999px;padding:4px 12px;margin-bottom:12px}
+.hero h1{font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1.35;word-break:keep-all}
+.hero .sub{margin-top:8px;color:var(--sub);font-size:15px}
+.hero .facts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.hero .chip{font-size:13px;font-weight:600;color:var(--sub);background:var(--bg);
+  border-radius:999px;padding:6px 12px}
+.notice{margin:16px 0;background:var(--card);border-radius:var(--r-md);padding:14px 18px;
+  font-size:13px;color:var(--sub);box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.notice b{color:var(--ink)}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border-radius:var(--r-lg);padding:24px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.card h2{font-size:17px;font-weight:800;margin-bottom:14px;letter-spacing:-0.01em}
+label{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:14px 0 6px}
+label:first-of-type{margin-top:0}
+select{width:100%;min-height:48px;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);
+  background:var(--bg);border:1.5px solid transparent;border-radius:var(--r-md);padding:10px 14px;
+  appearance:none;background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7684' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center}
+select:hover{border-color:var(--line)}
+select:focus-visible{outline:none;border-color:var(--blue)}
+.btn{width:100%;min-height:52px;margin-top:20px;font-family:inherit;font-size:16px;font-weight:800;
+  color:#fff;background:var(--blue);border:none;border-radius:var(--r-md);cursor:pointer;
+  transition:background 120ms ease-out, transform 90ms ease-out}
+.btn:hover{background:var(--blue-deep)}
+.btn:focus-visible{outline:3px solid var(--blue-soft);outline-offset:2px}
+.btn:active{transform:scale(0.98)}
+.map-card{margin-top:16px}
+.map-cap{font-size:12px;color:var(--sub);margin-top:8px}
+.result-empty{color:var(--sub);padding:24px 0;text-align:center}
+.grade{border-radius:var(--r-md);padding:18px 20px;margin-bottom:14px}
+.grade .g-label{font-size:13px;font-weight:700;opacity:0.85}
+.grade .g-title{font-size:22px;font-weight:800;margin-top:2px;letter-spacing:-0.01em}
+.grade p{font-size:14px;margin-top:6px}
+.grade.g1{background:var(--green-soft)}.grade.g1 .g-title,.grade.g1 .g-label{color:var(--green)}
+.grade.g2{background:var(--amber-soft)}.grade.g2 .g-title,.grade.g2 .g-label{color:var(--amber)}
+.grade.g3{background:var(--red-soft)}.grade.g3 .g-title,.grade.g3 .g-label{color:var(--red)}
+.sec{margin-top:16px}
+.sec h3{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px}
+.sec ul{list-style:none}
+.sec li{background:var(--bg);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:6px;font-size:14px}
+.law{font-size:12px;color:var(--sub)}
+.duty{font-weight:700;font-size:14px;background:var(--bg);border-radius:var(--r-sm);padding:12px 14px}
+.duty.yes{color:var(--red)}
+.duty.no{color:var(--green)}
+.act{display:flex;justify-content:space-between;align-items:center;margin-top:8px;
+  padding:14px 16px;min-height:52px;border-radius:var(--r-md);background:var(--blue-soft);
+  color:var(--blue-deep);font-weight:800;text-decoration:none;font-size:15px}
+.act:hover{background:#DCEBFF}
+.act:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.act .a-sub{display:block;font-weight:500;font-size:12px;color:var(--sub)}
+.unc{font-size:12px;color:var(--sub);margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+footer{margin-top:24px;font-size:12px;color:var(--sub);text-align:center;line-height:1.7}
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <span class="eyebrow">굴착 사전판정 AI, 땅속OK 시연판</span>
+    <h1>CTX와 충북 교통거점 시대,<br>싱크홀 막는 지하 디지털 트윈</h1>
+    <p class="sub">파기 전에 땅속을 확인합니다. 공개 데이터 기반 격자 모델에서 AI가 위험을 설명하고, 법정 절차로 연결합니다.</p>
+    <div class="facts">
+      <span class="chip">CTX 청주 도심 지하 구간 2028 착공</span>
+      <span class="chip">2024 타공사 가스사고 전건 미신고</span>
+      <span class="chip">별표 16 실조문 내장</span>
+    </div>
+  </header>
+
+  <p class="notice"><b>참고 정보입니다.</b> 신고 면제를 판정하지 않으며, 최종 확인과 법정 신고는 이용자가 수행합니다. 시연판의 매설물 정보는 모의 데이터입니다.</p>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="in-h">
+      <h2 id="in-h">공사 정보 입력</h2>
+      <label for="site">공사 위치</label>
+      <select id="site">
+        <option value="bokdae">청주 복대동 (CTX 예정 도심)</option>
+        <option value="ochang">청주 오창읍 (공동구, 산업단지)</option>
+        <option value="osong">청주 오송읍 (역세권)</option>
+        <option value="naesu">청주 내수읍 (농촌)</option>
+        <option value="chungju">충주 성내동 (구도심)</option>
+      </select>
+      <label for="work">공사 종류</label>
+      <select id="work">
+        <option value="pile">파일박기, 항타</option>
+        <option value="machine">기계 굴착 (굴삭기)</option>
+        <option value="build">소규모 건축 기초</option>
+        <option value="water">수도 인입</option>
+        <option value="garden">조경 식재, 담장 기초</option>
+        <option value="farm">농지 배수로</option>
+      </select>
+      <label for="method">작업수단</label>
+      <select id="method">
+        <option value="machine">기계장비</option>
+        <option value="hand">수작업</option>
+      </select>
+      <label for="land">토지 관계</label>
+      <select id="land">
+        <option value="other">타인 토지, 도로 등 공공부지</option>
+        <option value="own">본인 소유, 점유 토지(농지 포함)</option>
+      </select>
+      <label for="depth">굴착 깊이</label>
+      <select id="depth">
+        <option value="0.3">30cm 미만</option>
+        <option value="1" selected>30cm 이상 1m 미만</option>
+        <option value="2">1m 이상 2m 미만</option>
+        <option value="3">2m 이상</option>
+      </select>
+      <button class="btn" id="judge" type="button">판정하기</button>
+    </section>
+
+    <section class="card" aria-labelledby="out-h" aria-live="polite">
+      <h2 id="out-h">판정 결과</h2>
+      <div id="result"><p class="result-empty">공사 정보를 넣고 판정하기를 누르면<br>절차 등급과 적용 기준이 여기에 표시됩니다.</p></div>
+    </section>
+  </div>
+
+  <section class="card map-card" aria-labelledby="map-h">
+    <h2 id="map-h">청주권 지하 위험 모식 지도</h2>
+    <svg viewBox="0 0 920 340" width="100%" role="img" aria-label="청주권 모식 지도">
+      <rect x="0" y="0" width="920" height="340" rx="16" fill="#F7F9FB"/>
+      <!-- 격자 -->
+      <g stroke="#E5E8EB" stroke-width="1">
+        <line x1="0" y1="85" x2="920" y2="85"/><line x1="0" y1="170" x2="920" y2="170"/><line x1="0" y1="255" x2="920" y2="255"/>
+        <line x1="153" y1="0" x2="153" y2="340"/><line x1="306" y1="0" x2="306" y2="340"/><line x1="459" y1="0" x2="459" y2="340"/>
+        <line x1="612" y1="0" x2="612" y2="340"/><line x1="765" y1="0" x2="765" y2="340"/>
+      </g>
+      <!-- 미호강 -->
+      <path d="M 40 300 C 180 250, 260 180, 330 60" stroke="#BBD8FF" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <!-- CTX 노선(지하 구간) -->
+      <path id="ctx" d="M 60 320 C 260 300, 380 240, 470 190 C 560 140, 700 110, 860 60" stroke="#3182F6" stroke-width="5" fill="none" stroke-dasharray="14 9" stroke-linecap="round"/>
+      <text x="640" y="95" font-size="14" font-weight="700" fill="#1B64DA">CTX 청주 도심 지하 구간(예정)</text>
+      <text x="66" y="312" font-size="12" fill="#6B7684">세종 방면</text>
+      <text x="795" y="45" font-size="12" fill="#6B7684">청주공항 방면</text>
+      <!-- 지점 마커 -->
+      <g id="markers" font-size="13" font-weight="700">
+        <g data-site="bokdae"><circle cx="470" cy="190" r="13" fill="#F04452" opacity="0.9"/><circle cx="470" cy="190" r="22" fill="#F04452" opacity="0.18"/><text x="492" y="196" fill="#191F28">복대동</text></g>
+        <g data-site="ochang"><circle cx="600" cy="120" r="12" fill="#D9730D" opacity="0.9"/><circle cx="600" cy="120" r="20" fill="#D9730D" opacity="0.18"/><text x="620" y="126" fill="#191F28">오창</text></g>
+        <g data-site="osong"><circle cx="300" cy="230" r="11" fill="#D9730D" opacity="0.85"/><circle cx="300" cy="230" r="18" fill="#D9730D" opacity="0.15"/><text x="318" y="236" fill="#191F28">오송</text></g>
+        <g data-site="naesu"><circle cx="700" cy="220" r="9" fill="#00A661" opacity="0.85"/><text x="716" y="226" fill="#191F28">내수</text></g>
+        <g data-site="chungju"><circle cx="850" cy="270" r="10" fill="#D9730D" opacity="0.8"/><text x="805" y="296" fill="#191F28">충주 방면</text></g>
+      </g>
+      <!-- 범례 -->
+      <g font-size="12" fill="#6B7684">
+        <circle cx="40" cy="36" r="6" fill="#F04452"/><text x="52" y="40">고위험(매설물 고밀도)</text>
+        <circle cx="200" cy="36" r="6" fill="#D9730D"/><text x="212" y="40">확인 필요</text>
+        <circle cx="300" cy="36" r="6" fill="#00A661"/><text x="312" y="40">저밀도 추정</text>
+      </g>
+    </svg>
+    <p class="map-cap">모식 지도입니다(실축척 아님). 실서비스는 격자 단위 지하 디지털 트윈에서 지점별 매설물 밀도와 불확실성을 표시합니다. 선택한 지점은 지도에서 강조됩니다.</p>
+  </section>
+
+  <footer>
+    판정 규칙 출처: 도시가스사업법 시행규칙 별표 16(도시가스배관의 안전조치 및 손상방지기준), 도시가스사업법 제30조의3(굴착공사 정보지원).<br>
+    이 화면은 토스 계열 디자인 문법을 참고한 자체 제작 화면이며, 특정 기업의 상표와 자산을 사용하지 않았습니다.
+  </footer>
+</div>
+
+<script>
+"use strict";
+var SITES = {
+  bokdae:  { name: "복대동", gasDist: 0.8, density: 0.9, unc: 0.2, note: "CTX 예정 구간, 매설물 고밀도" },
+  ochang:  { name: "오창읍", gasDist: 1.5, density: 0.8, unc: 0.3, note: "공동구, 산업단지 배관 밀집" },
+  osong:   { name: "오송읍", gasDist: 2.5, density: 0.6, unc: 0.3, note: "역세권 개발지" },
+  naesu:   { name: "내수읍", gasDist: 8.0, density: 0.2, unc: 0.6, note: "농촌, 공급권역 경계" },
+  chungju: { name: "성내동", gasDist: 1.2, density: 0.7, unc: 0.4, note: "구도심 노후 관로" }
+};
+var RULES = [
+  { test: function(s, w, d) { return w === "pile" && s.gasDist <= 0.3; },
+    text: "배관 좌우 30cm 이내 파일박기 금지", law: "별표 16" },
+  { test: function(s, w, d) { return s.gasDist <= 1.0 && (w === "machine" || w === "pile" || w === "build"); },
+    text: "배관 좌우 1m 이내는 인력 굴착 원칙(기계 굴착 제한)", law: "별표 16" },
+  { test: function(s, w, d) { return s.gasDist <= 2.0 && d >= 1; },
+    text: "배관 주위 2m 이내 굴착은 시험굴착과 도시가스사 입회 요건", law: "별표 16" },
+  { test: function(s, w, d) { return w === "pile" && s.gasDist <= 2.0; },
+    text: "항타기는 배관 수평거리 2m 이내 설치 제한", law: "별표 16" }
+];
+function highlight(key) {
+  var gs = document.querySelectorAll("#markers g");
+  for (var i = 0; i < gs.length; i++) {
+    gs[i].style.opacity = (gs[i].getAttribute("data-site") === key) ? "1" : "0.35";
+  }
+}
+function judge() {
+  var key = document.getElementById("site").value;
+  var s = SITES[key];
+  var w = document.getElementById("work").value;
+  var d = parseFloat(document.getElementById("depth").value);
+  var mth = document.getElementById("method").value;
+  var land = document.getElementById("land").value;
+  var hits = RULES.filter(function(r) { return r.test(s, w, d); });
+  var exemptMaybe = (mth === "hand" && land === "own" && d < 1);
+  var duty = s.gasDist <= 3.0 && !exemptMaybe;
+  var score = s.density * 40 + hits.length * 18 + Math.min(d, 3) * 8 + s.unc * 12;
+  var g = score >= 60 ? 3 : (duty ? 2 : 1);
+  var G = {
+    1: { t: "법정 예외 가능성", c: "g1", desc: "수작업과 본인 토지 조건에서는 원콜 확인 의무의 예외에 해당할 수 있습니다. 예외 여부의 최종 판단은 기관 확인으로 하십시오." },
+    2: { t: "원콜 확인 대상", c: "g2", desc: "이 굴착은 원콜(1644-0001) 확인을 거친 뒤 진행하십시오. 아래 위험 설명과 적용 기준을 함께 확인하십시오." },
+    3: { t: "작업 보류(고위험)", c: "g3", desc: "매설물 고밀도 추정 지점입니다. 원콜 확인과 배관 실위치 표시 전에는 굴착을 보류하십시오." }
+  }[g];
+  var html = "";
+  html += '<div class="grade ' + G.c + '"><div class="g-label">절차 등급 ' + g + "/3, " + s.name + " (" + s.note + ')</div>'
+        + '<div class="g-title">' + G.t + "</div><p>" + G.desc + "</p></div>";
+  html += '<div class="sec"><h3>적용되는 법정 기준</h3><ul>';
+  if (hits.length === 0) {
+    html += "<li>현재 입력 조건에서 별표 16의 거리 기준 저촉 없음 <span class=\"law\">(추정 배관 거리 " + s.gasDist.toFixed(1) + "m)</span></li>";
+  } else {
+    hits.forEach(function(r) { html += "<li>" + r.text + ' <span class="law">(' + r.law + ")</span></li>"; });
+  }
+  html += "</ul></div>";
+  html += '<div class="sec"><h3>법정 절차</h3><p class="duty ' + (duty ? "yes" : "no") + '">'
+        + (duty ? "굴착공사 원콜 확인 대상입니다 (도시가스사업법 제30조의3). 이 판정은 신고 면제를 확정하지 않습니다."
+                : "입력 조건상 예외 가능성이 있습니다. 면제 확정은 기관 확인으로만 가능합니다.")
+        + "</p></div>";
+  html += '<div class="sec"><h3>다음 행동</h3>'
+        + '<a class="act" href="tel:16440001"><span>원콜 신고 1644-0001<span class="a-sub">굴착공사정보지원센터, 무료</span></span><span>전화</span></a>'
+        + '<a class="act" href="#" onclick="return false"><span>관할 시군 담당 부서<span class="a-sub">도로점용, 상하수도 담당</span></span><span>안내</span></a></div>';
+  html += '<p class="unc">추정 불확실성 ' + Math.round(s.unc * 100) + "%. 불확실성이 높은 지점은 등급을 보수적으로 상향합니다. 이 판정은 참고 정보입니다.</p>";
+  document.getElementById("result").innerHTML = html;
+  highlight(key);
+}
+document.getElementById("judge").addEventListener("click", judge);
+document.getElementById("site").addEventListener("change", function() { highlight(this.value); });
+</script>
+</body>
+</html>
