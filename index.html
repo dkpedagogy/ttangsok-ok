@@ -153,10 +153,10 @@ footer{margin-top:24px;font-size:12px;color:var(--sub);text-align:center;line-he
       <span class="ops-live"><span class="dot"></span>가동 중, 시연 데이터</span>
     </div>
     <div class="ops-grid">
-      <div class="kpi"><span class="k-label">오늘 판정</span><span class="k-num" data-target="142">0</span><span class="k-unit">건</span></div>
-      <div class="kpi"><span class="k-label">원콜 연결</span><span class="k-num" data-target="57">0</span><span class="k-unit">건</span></div>
-      <div class="kpi"><span class="k-label">고위험 차단</span><span class="k-num warn" data-target="12">0</span><span class="k-unit">건</span></div>
-      <div class="kpi"><span class="k-label">격자 갱신</span><span class="k-num" data-target="3204">0</span><span class="k-unit">칸</span></div>
+      <div class="kpi"><span class="k-label">2025년 굴착 허가(청주 대장)</span><span class="k-num" data-target="147">0</span><span class="k-unit">건</span></div>
+      <div class="kpi"><span class="k-label">최다 지역, 오창읍</span><span class="k-num" data-target="34">0</span><span class="k-unit">건</span></div>
+      <div class="kpi"><span class="k-label">도시가스 관련 허가</span><span class="k-num warn" data-target="14">0</span><span class="k-unit">건</span></div>
+      <div class="kpi"><span class="k-label">2024 타공사 가스사고</span><span class="k-num warn" data-target="6">0</span><span class="k-unit">건, 전건 미신고</span></div>
     </div>
     <div class="ops-map-shell">
       <div id="opsmap" aria-label="청주권 관제 지도"></div>
@@ -165,10 +165,11 @@ footer{margin-top:24px;font-size:12px;color:var(--sub);text-align:center;line-he
         <span><i style="background:#F08A00"></i>확인 필요</span>
         <span><i style="background:#37D67A"></i>저밀도 추정</span>
         <span><i class="ln"></i>CTX 개략 노선</span>
+        <span><i style="background:transparent;border:2px solid #FF5B49;width:12px;height:12px"></i>2025 굴착 허가 건수(실데이터)</span>
       </div>
     </div>
-    <div class="ops-ticker"><span class="t-tag">판정</span><span id="ticker">청주 복대동, 파일박기, 작업 보류</span></div>
-    <p class="ops-note">이 상황판의 수치와 판정 흐름은 시연용 모의 데이터입니다. 실서비스에서는 시군 관제 화면에 실제 판정 집계가 같은 구성으로 표시됩니다.</p>
+    <div class="ops-ticker"><span class="t-tag">허가 실데이터</span><span id="ticker">2025.2.24. 내수읍 구성리, 우수관로 매설</span></div>
+    <p class="ops-note">굴착 허가 지표, 허가 흐름, 지도의 굴착 밀도 원은 공공데이터포털 「충청북도 청주시 도로점용(굴착)허가 대장」(2025-12-31 기준, 수록 147건) 실데이터입니다. 시연 지점 5곳의 지하 판정만 모의 심도 기반입니다.</p>
   </section>
 
   <header class="hero">
@@ -481,12 +482,14 @@ document.getElementById("work").addEventListener("change",refreshTwin);
     requestAnimationFrame(step);
   });
   var FEED = [
-    "청주 복대동, 파일박기, 작업 보류",
-    "청주 오창읍, 기계 굴착, 원콜 확인 대상",
-    "청주 내수읍, 조경 식재, 법정 예외 가능성",
-    "충주 성내동, 수도 인입, 원콜 확인 대상",
-    "청주 오송읍, 소규모 건축, 원콜 확인 대상",
-    "청주 복대동, 담장 기초, 원콜 확인 대상"
+    "2025.2.24. 내수읍 구성리, 우수관로 매설",
+    "2025년 오창읍, 통신전주 설치",
+    "2025년 북이면, 오수관로 매설",
+    "2025년 내덕동, 도시가스 CAP 마감공사",
+    "2025년 우암동, 배수관로 매설",
+    "2025년 율량동, 전주 설치",
+    "2025년 사천동, 통신관로 매설",
+    "2025년 오창읍, 다목적 CCTV 설치"
   ];
   var i = 0, tk = document.getElementById("ticker");
   if (tk && !reduce) setInterval(function(){ i = (i + 1) % FEED.length; tk.textContent = FEED[i]; }, 3000);
@@ -543,6 +546,22 @@ function opsMap3D(){
         coordinates: [[127.2650,36.5040],[127.3272,36.6199],[127.4568,36.6350],[127.4890,36.6424],[127.4990,36.7166]] } } });
       map.addLayer({ id: "ctx-line", type: "line", source: "ctx",
         paint: { "line-color": "#3B8BFF", "line-width": 4, "line-dasharray": [2.2, 1.6], "line-opacity": 0.95 } });
+    });
+    // 2025 굴착 허가 실데이터: 읍면동 집계 원(공공데이터포털 15084287)
+    var EXCAV = [["오창읍",127.4545,36.74238,34],["내수읍",127.53547,36.72395,27],["북이면",127.54167,36.73913,13],
+                 ["내덕동",127.48948,36.65777,12],["우암동",127.4889,36.64915,10],["율량동",127.51494,36.66329,7],
+                 ["사천동",127.47354,36.67075,4],["주성동",127.50272,36.67618,4],["오동동",127.47393,36.69204,3],
+                 ["주중동",127.48927,36.6834,2]];
+    EXCAV.forEach(function(x){
+      var r = Math.round(14 + Math.sqrt(x[3]) * 7);
+      var c = x[3] >= 20 ? "#FF5B49" : (x[3] >= 8 ? "#FFA114" : "#63B3FF");
+      var d = document.createElement("div");
+      d.style.cssText = "width:" + (r*2) + "px;height:" + (r*2) + "px;border-radius:50%;background:" + c
+        + "33;border:2px solid " + c + ";display:flex;align-items:center;justify-content:center;"
+        + "color:#fff;font-weight:800;font-size:12px;text-shadow:0 1px 3px rgba(0,0,0,0.8)";
+      d.textContent = x[3];
+      d.title = x[0] + " 굴착 허가 " + x[3] + "건(2025)";
+      new maplibregl.Marker({ element: d, anchor: "center" }).setLngLat([x[1], x[2]]).addTo(map);
     });
     // CTX 노선: 지형에 묻히지 않게 화면 위 점 마커로 표시
     var ROUTE = [[127.2650,36.5040],[127.3272,36.6199],[127.4568,36.6350],[127.4890,36.6424],[127.4990,36.7166]];
