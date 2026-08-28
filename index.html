@@ -62,6 +62,19 @@ select:focus-visible{outline:none;border-color:var(--blue)}
 .btn:focus-visible{outline:3px solid var(--blue-soft);outline-offset:2px}
 .btn:active{transform:scale(0.98)}
 .map-card{margin-top:16px}
+.twin-card{margin-top:16px}
+.twin-flex{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:24px;align-items:start}
+@media (max-width:860px){.twin-flex{grid-template-columns:minmax(0,1fr)}}
+.twin-side h3{font-size:14px;font-weight:800;margin-bottom:10px}
+.twin-side ol{list-style:none;counter-reset:rz}
+.twin-side li{counter-increment:rz;position:relative;background:var(--bg);border-radius:var(--r-sm);
+  padding:12px 14px 12px 44px;margin-bottom:8px;font-size:13.5px;line-height:1.55}
+.twin-side li::before{content:counter(rz);position:absolute;left:12px;top:12px;width:22px;height:22px;
+  border-radius:50%;background:var(--red);color:#fff;font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center}
+.twin-side li.safe::before{background:var(--green)}
+.twin-side li.warn::before{background:var(--amber)}
+.twin-note{font-size:12px;color:var(--sub);margin-top:10px}
 .map-cap{font-size:12px;color:var(--sub);margin-top:8px}
 .result-empty{color:var(--sub);padding:24px 0;text-align:center}
 .grade{border-radius:var(--r-md);padding:18px 20px;margin-bottom:14px}
@@ -150,6 +163,18 @@ footer{margin-top:24px;font-size:12px;color:var(--sub);text-align:center;line-he
       <div id="result"><p class="result-empty">공사 정보를 넣고 판정하기를 누르면<br>절차 등급과 적용 기준이 여기에 표시됩니다.</p></div>
     </section>
   </div>
+
+  <section class="card twin-card" aria-labelledby="twin-h">
+    <h2 id="twin-h">지하 단면 디지털 트윈</h2>
+    <div class="twin-flex">
+      <div><svg id="twin" viewBox="0 0 640 500" width="100%" role="img" aria-label="선택 지점 지하 단면"></svg></div>
+      <div class="twin-side">
+        <h3>위험 요인</h3>
+        <ol id="reasons"></ol>
+        <p class="twin-note">단면은 모의 심도 기반 모식도입니다(실축척 아님). 실서비스는 격자 트윈의 추정 심도와 불확실성을 함께 표시하고, 번호는 왼쪽 단면의 위치와 연결됩니다.</p>
+      </div>
+    </div>
+  </section>
 
   <section class="card map-card" aria-labelledby="map-h">
     <h2 id="map-h">청주권 지하 위험 모식 지도</h2>
@@ -255,8 +280,158 @@ function judge() {
   document.getElementById("result").innerHTML = html;
   highlight(key);
 }
+// ---- 지하 단면 디지털 트윈 ----
+// 모의 심도 데이터(m). old=노후, mat=재질 표기
+var TWIN = {
+  bokdae:  { pipes: [
+      { kind: "통신", depth: 0.4, color: "#8B95A1" },
+      { kind: "도시가스 중압", depth: 0.9, color: "#F04452", gas: true },
+      { kind: "상수도", depth: 1.3, color: "#3182F6" },
+      { kind: "하수도(노후)", depth: 1.9, color: "#6B7684", old: true, sewer: true }
+    ], gw: 3.2, ctx: true, soil: "매립층과 충적층 혼재" },
+  ochang:  { pipes: [
+      { kind: "통신", depth: 0.5, color: "#8B95A1" },
+      { kind: "상수도(공동구 인입)", depth: 1.0, color: "#3182F6" },
+      { kind: "도시가스 중압", depth: 1.5, color: "#F04452", gas: true },
+      { kind: "공동구(전력, 상수)", depth: 2.6, color: "#1B64DA", box: true }
+    ], gw: 4.0, ctx: false, soil: "산업단지 성토 지반" },
+  osong:   { pipes: [
+      { kind: "상수도", depth: 1.2, color: "#3182F6" },
+      { kind: "하수도", depth: 1.8, color: "#6B7684", sewer: true },
+      { kind: "도시가스", depth: 2.5, color: "#F04452", gas: true }
+    ], gw: 3.5, ctx: true, soil: "역세권 개발지" },
+  naesu:   { pipes: [
+      { kind: "소형 상수관", depth: 1.0, color: "#3182F6" }
+    ], gw: 2.5, ctx: false, sparse: true, soil: "농경지, 자료 희박" },
+  chungju: { pipes: [
+      { kind: "통신", depth: 0.4, color: "#8B95A1" },
+      { kind: "상수도(노후)", depth: 0.9, color: "#3182F6", old: true },
+      { kind: "도시가스(노후)", depth: 1.2, color: "#F04452", gas: true, old: true },
+      { kind: "하수도(노후)", depth: 1.6, color: "#6B7684", old: true, sewer: true }
+    ], gw: 3.0, ctx: false, soil: "구도심 매립 지반" }
+};
+var M = 34;            // 1m = 34px
+var GY = 96;           // 지표면 y
+var FX0 = 60, FX1 = 500; // 단면 좌우
+function dy(m) { return GY + m * M; }
+function drawTwin(key, depth, work) {
+  var t = TWIN[key], s = SITES[key];
+  var pins = [], reasons = [];
+  var svg = "";
+  svg += '<defs>'
+    + '<linearGradient id="soil" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0" stop-color="#EFE6D8"/><stop offset="1" stop-color="#DCCBB2"/></linearGradient>'
+    + '<pattern id="gwp" width="14" height="8" patternUnits="userSpaceOnUse">'
+    + '<path d="M0 4 Q 3.5 0, 7 4 T 14 4" stroke="#7FB5F5" fill="none" stroke-width="1.6"/></pattern>'
+    + '</defs>';
+  // 하늘 밴드와 지표(도로)
+  svg += '<rect x="0" y="0" width="640" height="500" rx="16" fill="#F7F9FB"/>';
+  // 3D 상판(도로면)
+  svg += '<polygon points="' + FX0 + ',' + GY + ' ' + FX1 + ',' + GY + ' ' + (FX1 + 70) + ',' + (GY - 46) + ' ' + (FX0 + 70) + ',' + (GY - 46) + '" fill="#B0B8C1"/>';
+  svg += '<polygon points="' + FX0 + ',' + GY + ' ' + FX1 + ',' + GY + ' ' + (FX1 + 70) + ',' + (GY - 46) + ' ' + (FX0 + 70) + ',' + (GY - 46) + '" fill="none" stroke="#8B95A1" stroke-width="1"/>';
+  svg += '<line x1="' + (FX0 + 35) + '" y1="' + (GY - 23) + '" x2="' + (FX1 + 35) + '" y2="' + (GY - 23) + '" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="18 14" opacity="0.85"/>';
+  svg += '<text x="' + (FX1 + 6) + '" y="' + (GY - 52) + '" font-size="12" fill="#6B7684">지표(도로)</text>';
+  // 단면 본체
+  svg += '<rect x="' + FX0 + '" y="' + GY + '" width="' + (FX1 - FX0) + '" height="' + (8 * M) + '" fill="url(#soil)"/>';
+  // 우측면(3D 두께)
+  svg += '<polygon points="' + FX1 + ',' + GY + ' ' + (FX1 + 70) + ',' + (GY - 46) + ' ' + (FX1 + 70) + ',' + (dy(8) - 46) + ' ' + FX1 + ',' + dy(8) + '" fill="#C9B698" opacity="0.85"/>';
+  // 지하수 밴드
+  if (t.gw < 8) {
+    svg += '<rect x="' + FX0 + '" y="' + dy(t.gw) + '" width="' + (FX1 - FX0) + '" height="' + (8 * M - t.gw * M) + '" fill="#D9EBFF" opacity="0.65"/>';
+    svg += '<rect x="' + FX0 + '" y="' + dy(t.gw) + '" width="' + (FX1 - FX0) + '" height="14" fill="url(#gwp)"/>';
+    svg += '<text x="' + (FX0 + 8) + '" y="' + (dy(t.gw) + 26) + '" font-size="12" fill="#1B64DA">지하수위 약 ' + t.gw.toFixed(1) + 'm</text>';
+  }
+  // 깊이 눈금
+  for (var m = 0; m <= 8; m++) {
+    svg += '<line x1="' + (FX0 - 6) + '" y1="' + dy(m) + '" x2="' + FX0 + '" y2="' + dy(m) + '" stroke="#8B95A1"/>';
+    if (m % 2 === 0) svg += '<text x="' + (FX0 - 12) + '" y="' + (dy(m) + 4) + '" font-size="11" fill="#6B7684" text-anchor="end">' + m + 'm</text>';
+  }
+  // 가스 배관 이격 밴드(별표 16)
+  t.pipes.forEach(function(p) {
+    if (!p.gas) return;
+    svg += '<rect x="' + FX0 + '" y="' + dy(Math.max(0, p.depth - 1)) + '" width="' + (FX1 - FX0) + '" height="' + (2 * M) + '" fill="#F04452" opacity="0.07"/>';
+    svg += '<rect x="' + FX0 + '" y="' + dy(Math.max(0, p.depth - 0.3)) + '" width="' + (FX1 - FX0) + '" height="' + (0.6 * M) + '" fill="#F04452" opacity="0.10"/>';
+    svg += '<text x="' + (FX0 + 8) + '" y="' + (dy(Math.min(8, p.depth + 1)) - 6) + '" font-size="11" font-weight="700" fill="#F04452" opacity="0.9">이격 1m 구간(별표 16)</text>';
+  });
+  // 굴착 구덩이
+  var shX = 190, shW = 96;
+  var shBottom = dy(depth);
+  svg += '<polygon points="' + shX + ',' + GY + ' ' + (shX + shW) + ',' + GY + ' ' + (shX + shW + 34) + ',' + (GY - 22) + ' ' + (shX + 34) + ',' + (GY - 22) + '" fill="#5C4630"/>';
+  svg += '<rect x="' + shX + '" y="' + GY + '" width="' + shW + '" height="' + (depth * M) + '" fill="#7A5C3E"/>';
+  svg += '<rect x="' + shX + '" y="' + GY + '" width="' + shW + '" height="' + (depth * M) + '" fill="none" stroke="#3E2F1F" stroke-width="2" stroke-dasharray="6 5"/>';
+  svg += '<rect x="' + (shX + 6) + '" y="' + (GY + 6) + '" width="84" height="20" rx="6" fill="#3E2F1F" opacity="0.85"/>';
+  svg += '<text x="' + (shX + 48) + '" y="' + (GY + 20) + '" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">굴착 ' + depth.toFixed(1) + 'm</text>';
+  // 배관들
+  var pinN = 0;
+  t.pipes.forEach(function(p) {
+    var y = dy(p.depth);
+    if (p.box) {
+      svg += '<rect x="' + (FX0 + 30) + '" y="' + (y - 18) + '" width="' + (FX1 - FX0 - 60) + '" height="36" rx="6" fill="#DCE7F5" stroke="' + p.color + '" stroke-width="2"/>';
+    } else {
+      svg += '<rect x="' + (FX0 + 10) + '" y="' + (y - 7) + '" width="' + (FX1 - FX0 - 20) + '" height="14" rx="7" fill="' + p.color + '" opacity="0.92"/>';
+      svg += '<ellipse cx="' + (FX1 - 10) + '" cy="' + y + '" rx="5" ry="7" fill="#FFFFFF" opacity="0.5"/>';
+      if (p.old) svg += '<rect x="' + (FX0 + 10) + '" y="' + (y - 7) + '" width="' + (FX1 - FX0 - 20) + '" height="14" rx="7" fill="none" stroke="#191F28" stroke-width="1.2" stroke-dasharray="3 4" opacity="0.55"/>';
+    }
+    svg += '<text x="' + (FX1 + 8) + '" y="' + (y + 4) + '" font-size="12" font-weight="600" fill="#191F28">' + p.kind + ' ' + p.depth.toFixed(1) + 'm</text>';
+    // 충돌 판정: 굴착 바닥이 배관 심도의 1m 이내(가스) 또는 배관 위를 지나 파내려감
+    var gap = Math.abs(p.depth - depth);
+    var crosses = depth >= p.depth - (p.gas ? 1.0 : 0.4);
+    if (p.gas && crosses) {
+      pinN += 1; pins.push({ n: pinN, x: shX + shW + 14, y: y - 10 });
+      svg += '<circle cx="' + (shX + shW / 2) + '" cy="' + y + '" r="26" fill="#F04452" opacity="0.30"><animate attributeName="r" values="20;30;20" dur="1.6s" repeatCount="indefinite"/></circle>';
+      reasons.push({ cls: "", txt: "도시가스 배관 추정 심도 " + p.depth.toFixed(1) + "m. 굴착 " + depth.toFixed(1) + "m가 이격 1m 구간에 들어와 " + (work === "pile" ? "파일박기 금지와 항타기 제한(별표 16)" : "인력 굴착 원칙과 시험굴착, 입회 요건(별표 16)") + "이 적용됩니다." });
+    } else if (p.sewer && p.old && t.gw < 8) {
+      pinN += 1; pins.push({ n: pinN, x: shX + shW + 14, y: y - 10 });
+      svg += '<ellipse cx="' + (shX + shW / 2 + 90) + '" cy="' + (y + 26) + '" rx="34" ry="14" fill="#FFFFFF" opacity="0.65" stroke="#8B95A1" stroke-dasharray="4 4"/>';
+      svg += '<text x="' + (shX + shW / 2 + 90) + '" y="' + (y + 31) + '" font-size="10" fill="#6B7684" text-anchor="middle">공동(빈 공간)</text>';
+      reasons.push({ cls: "", txt: "노후 하수관(" + p.depth.toFixed(1) + "m) 누수와 지하수 유입이 겹치면 토사가 쓸려 나가 배관 아래 공동이 생깁니다. 2025년 명일동 싱크홀에서 확인된 기제입니다." });
+    } else if (p.old && !p.sewer) {
+      pinN += 1; pins.push({ n: pinN, x: shX + shW + 14, y: y - 10 });
+      reasons.push({ cls: "warn", txt: p.kind + "(" + p.depth.toFixed(1) + "m)은 노후 관로입니다. 인접 굴착 진동만으로 파손될 수 있고, 파손 시 단수와 도로 침하로 이어집니다." });
+    }
+  });
+  // 절단 물결선과 CTX 대심도
+  var brk = dy(8) + 12;
+  svg += '<path d="M ' + FX0 + ' ' + brk + ' q 20 8 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0" stroke="#B0B8C1" fill="none" stroke-width="2"/>';
+  if (t.ctx) {
+    var cy = brk + 52;
+    svg += '<circle cx="300" cy="' + cy + '" r="30" fill="#E8F3FF" stroke="#3182F6" stroke-width="3" stroke-dasharray="8 6"/>';
+    svg += '<circle cx="300" cy="' + cy + '" r="12" fill="#3182F6" opacity="0.4"/>';
+    svg += '<text x="340" y="' + (cy - 2) + '" font-size="13" font-weight="700" fill="#1B64DA">CTX 대심도 터널(예정)</text>';
+    svg += '<text x="340" y="' + (cy + 16) + '" font-size="11" fill="#6B7684">약 40m, 2028 착공 예정 구간</text>';
+    pinN += 1; pins.push({ n: pinN, x: 300, y: cy - 44 });
+    reasons.push({ cls: "warn", txt: "CTX 대심도 터널 굴착 예정 구간입니다. 터널 굴착 진동과 지하수위 변화가 상부 매설물 지반에 영향을 줄 수 있어, 공사 기간 굴착 이력 관리가 필요합니다." });
+  }
+  if (t.sparse) {
+    pinN += 1; pins.push({ n: pinN, x: shX + shW + 14, y: dy(0.6) });
+    reasons.push({ cls: "warn", txt: "등록 배관이 희박한 지점이지만 자료 불확실성이 " + Math.round(s.unc * 100) + "%입니다. 확인되지 않은 소형 관로가 있을 수 있어 등급을 보수적으로 상향합니다." });
+  }
+  if (reasons.length === 0) {
+    reasons.push({ cls: "safe", txt: "현재 입력 조건에서 단면상 직접 충돌 요인이 없습니다. 원콜 확인 대상 여부는 판정 결과를 따르십시오." });
+  }
+  // 번호 핀
+  pins.forEach(function(p) {
+    svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="12" fill="#F04452"/>';
+    svg += '<text x="' + p.x + '" y="' + (p.y + 4.5) + '" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle">' + p.n + '</text>';
+  });
+  // 지반 주석
+  svg += '<text x="' + FX0 + '" y="492" font-size="11" fill="#6B7684">' + s.name + ', ' + t.soil + '. 심도는 모의 추정치</text>';
+  document.getElementById("twin").innerHTML = svg;
+  var ol = "";
+  reasons.forEach(function(r) { ol += '<li class="' + r.cls + '">' + r.txt + "</li>"; });
+  document.getElementById("reasons").innerHTML = ol;
+}
+function refreshTwin() {
+  drawTwin(document.getElementById("site").value,
+           parseFloat(document.getElementById("depth").value),
+           document.getElementById("work").value);
+}
 document.getElementById("judge").addEventListener("click", judge);
-document.getElementById("site").addEventListener("change", function() { highlight(this.value); });
+document.getElementById("site").addEventListener("change", function() { highlight(this.value); refreshTwin(); });
+document.getElementById("depth").addEventListener("change", refreshTwin);
+document.getElementById("work").addEventListener("change", refreshTwin);
+highlight("bokdae");
+refreshTwin();
 </script>
 </body>
 </html>
