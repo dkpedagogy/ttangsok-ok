@@ -133,6 +133,8 @@ footer{margin-top:24px;font-size:12px;color:var(--sub);text-align:center;line-he
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <script type="importmap">
 {
   "imports": {
@@ -490,8 +492,96 @@ document.getElementById("work").addEventListener("change",refreshTwin);
   if (tk && !reduce) setInterval(function(){ i = (i + 1) % FEED.length; tk.textContent = FEED[i]; }, 3000);
 })();
 
-// ---- 관제 지도(실지도 타일, 출처 표기 필수) ----
+// ---- 관제 지도: 3D 지형 위성(MapLibre GL), 실패 시 평면 지도 폴백 ----
+var GEO3D = {
+  bokdae:  { ll: [127.4568, 36.6350], name: "복대동", risk: "#F04452" },
+  ochang:  { ll: [127.4310, 36.7230], name: "오창읍", risk: "#F08A00" },
+  osong:   { ll: [127.3292, 36.6215], name: "오송읍", risk: "#F08A00" },
+  naesu:   { ll: [127.5222, 36.7093], name: "내수읍", risk: "#37D67A" },
+  chungju: { ll: [127.9280, 36.9910], name: "충주 성내동", risk: "#F08A00" }
+};
+function opsMap3D(){
+  if (typeof maplibregl === "undefined") return false;
+  var el = document.getElementById("opsmap");
+  if (!el) return false;
+  try {
+    var map = new maplibregl.Map({
+      container: "opsmap",
+      style: {
+        version: 8,
+        sources: {
+          sat: {
+            type: "raster",
+            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+            tileSize: 256,
+            maxzoom: 18,
+            attribution: "Tiles &copy; Esri, Maxar, Earthstar Geographics"
+          },
+          dem: {
+            type: "raster-dem",
+            tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+            tileSize: 256,
+            encoding: "terrarium",
+            maxzoom: 13,
+            attribution: "지형 &copy; Mapzen, AWS Open Data"
+          }
+        },
+        layers: [{ id: "sat", type: "raster", source: "sat" }],
+        terrain: { source: "dem", exaggeration: 1.7 }
+      },
+      center: [127.415, 36.655],
+      zoom: 10.6,
+      pitch: 57,
+      bearing: -14,
+      attributionControl: true,
+      cooperativeGestures: true
+    });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
+    map.on("load", function(){
+      map.setTerrain({ source: "dem", exaggeration: 1.7 });
+      map.addSource("ctx", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString",
+        coordinates: [[127.2650,36.5040],[127.3272,36.6199],[127.4568,36.6350],[127.4890,36.6424],[127.4990,36.7166]] } } });
+      map.addLayer({ id: "ctx-line", type: "line", source: "ctx",
+        paint: { "line-color": "#3B8BFF", "line-width": 4, "line-dasharray": [2.2, 1.6], "line-opacity": 0.95 } });
+    });
+    // CTX 노선: 지형에 묻히지 않게 화면 위 점 마커로 표시
+    var ROUTE = [[127.2650,36.5040],[127.3272,36.6199],[127.4568,36.6350],[127.4890,36.6424],[127.4990,36.7166]];
+    for (var si = 0; si < ROUTE.length - 1; si++) {
+      var a = ROUTE[si], bpt = ROUTE[si + 1];
+      var steps = 7;
+      for (var t = 0; t <= steps; t++) {
+        var lng = a[0] + (bpt[0] - a[0]) * t / steps;
+        var lat = a[1] + (bpt[1] - a[1]) * t / steps;
+        var dot = document.createElement("div");
+        dot.style.cssText = "width:9px;height:9px;border-radius:50%;background:#3B8BFF;border:1.5px solid rgba(255,255,255,0.75);box-shadow:0 0 6px rgba(59,139,255,0.9)";
+        new maplibregl.Marker({ element: dot, anchor: "center" }).setLngLat([lng, lat]).addTo(map);
+      }
+    }
+    var ctxLb = document.createElement("div");
+    ctxLb.className = "site-tip";
+    ctxLb.style.cssText = "color:#9FC4FF;border-color:#2A4A80";
+    ctxLb.textContent = "CTX 지하 구간(예정, 개략)";
+    new maplibregl.Marker({ element: ctxLb, anchor: "left", offset: [12, 0] }).setLngLat([127.385, 36.628]).addTo(map);
+    var sel = document.getElementById("site");
+    Object.keys(GEO3D).forEach(function(k){
+      var g = GEO3D[k];
+      var wrap = document.createElement("div");
+      wrap.style.cssText = "position:relative;width:34px;height:34px;cursor:pointer";
+      wrap.innerHTML = '<div class="pulse-ring" style="position:absolute;inset:0;background:' + g.risk + '"></div>'
+        + '<div style="position:absolute;left:8px;top:8px;width:18px;height:18px;border-radius:50%;background:' + g.risk + ';border:2.5px solid #fff"></div>'
+        + '<div class="site-tip" style="position:absolute;left:38px;top:6px;white-space:nowrap">' + g.name + '</div>';
+      wrap.addEventListener("click", function(){ sel.value = k; highlight(k); refreshTwin(); });
+      new maplibregl.Marker({ element: wrap, anchor: "center" }).setLngLat(g.ll).addTo(map);
+    });
+    sel.addEventListener("change", function(){
+      var g = GEO3D[this.value];
+      if (g) map.easeTo({ center: g.ll, duration: 900 });
+    });
+    return true;
+  } catch (e) { return false; }
+}
 (function opsMap(){
+  if (opsMap3D()) return;
   if (typeof L === "undefined" || !document.getElementById("opsmap")) return;
   var map = L.map("opsmap", { zoomControl: true, scrollWheelZoom: false, attributionControl: true })
              .setView([36.665, 127.42], 11);
